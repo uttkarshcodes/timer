@@ -3,78 +3,180 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,
+<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22>
+  <rect width=%22100%22 height=%22100%22 fill=%22%23007bff%22/>
+  <text x=%2250%22 y=%2270%22 font-size=%2270%22 text-anchor=%22middle%22 fill=%22white%22>T</text>
+</svg>">
+
     <title>Dynamic Practice Timer</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            margin: 0;
-            display: flex;
-        }
-        .main-container {
-            flex: 1;
-            text-align: center;
-            padding: 50px;
-        }
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    overflow-x: hidden; 
+}
+
+.main-container {
+    flex: 1;
+    text-align: center;
+    padding: 20px;
+    min-width: 0;
+}
+
+
         h1 {
             margin-bottom: 20px;
+            font-size: 1.8rem;
         }
+
         input {
             margin: 5px;
             padding: 8px;
-            width: 100px;
+            width: 120px;
+            max-width: 100%;
         }
+
         button {
-            padding: 10px 20px;
-            margin: 10px;
+            padding: 10px 15px;
+            margin: 5px;
             cursor: pointer;
+            border-radius: 5px;
+            border: none;
+            background: #007bff;
+            color: white;
+            font-size: 14px;
         }
+
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
         #timerDisplay {
-            font-size: 36px;
+            font-size: 2rem;
             margin: 20px 0;
         }
+
         #questionDisplay {
-            font-size: 24px;
+            font-size: 1.2rem;
             margin: 10px 0;
         }
+
         #log {
-            margin-top: 30px;
+            margin-top: 20px;
             text-align: left;
             max-width: 500px;
             margin-left: auto;
             margin-right: auto;
         }
+
         #log h2 {
             text-align: center;
+            font-size: 1.2rem;
         }
+
         .log-entry {
             border-bottom: 1px solid #ccc;
             padding: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
         }
+
+        .status {
+            font-size: 20px;
+            margin-left: 10px;
+        }
+
+        #savedTimeDisplay {
+            font-size: 1rem;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
         /* Notes Window */
         #notes {
             width: 300px;
             background: #fff;
             border-left: 2px solid #ccc;
-            padding: 20px;
+            padding: 15px;
             box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
         }
+
         #notes h2 {
             margin-top: 0;
             text-align: center;
+            font-size: 1.2rem;
         }
+
         #notes textarea {
             width: 100%;
-            height: 400px;
+            flex: 1;
             resize: none;
             padding: 10px;
             font-size: 14px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+            }
+
+            #notes {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #ccc;
+                box-shadow: none;
+                height: 200px;
+            }
+
+            #notes textarea {
+                height: 150px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            #timerDisplay {
+                font-size: 1.5rem;
+            }
+
+            #questionDisplay {
+                font-size: 1rem;
+            }
+
+            button {
+                font-size: 12px;
+                padding: 8px 12px;
+            }
+
+            #savedTimeDisplay {
+                font-size: 0.9rem;
+            }
+
+            .log-entry {
+                font-size: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
+
+
     <div class="main-container">
         <h1>Dynamic Practice Timer</h1>
         <div>
@@ -90,6 +192,7 @@
 
         <div id="questionDisplay"></div>
         <div id="timerDisplay">00:00</div>
+        <div id="savedTimeDisplay">Total Time Saved: 00:00</div>
 
         <div id="log">
             <h2>Question Log</h2>
@@ -104,9 +207,10 @@
 
     <script>
         let totalQuestions, totalTime, currentQuestion = 0;
-        let remainingTime = 0, questionTime = 0;
+        let perQuestionTime = 0, questionTime = 0;
         let timerInterval;
         let isPaused = false;
+        let totalSaved = 0;
 
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -115,11 +219,16 @@
         const timerDisplay = document.getElementById('timerDisplay');
         const questionDisplay = document.getElementById('questionDisplay');
         const logDiv = document.getElementById('log');
+        const savedTimeDisplay = document.getElementById('savedTimeDisplay');
 
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateSavedDisplay() {
+            savedTimeDisplay.textContent = `Total Time Saved: ${formatTime(totalSaved)}`;
         }
 
         function startQuestionTimer() {
@@ -130,32 +239,40 @@
             timerInterval = setInterval(() => {
                 if (!isPaused) {
                     questionTime--;
-                    remainingTime--;
                     timerDisplay.textContent = formatTime(questionTime);
                     if (questionTime <= 0) {
                         clearInterval(timerInterval);
-                        nextQuestion(0); // 0 leftover because question fully used
+                        logQuestion(perQuestionTime, 0, false);
+                        nextQuestion();
                     }
                 }
             }, 1000);
         }
 
-        function nextQuestion(leftoverTime) {
-            clearInterval(timerInterval);
-            doneBtn.disabled = true;
-
-            const spentTime = (Math.ceil(remainingTime / (totalQuestions - currentQuestion)) - leftoverTime) || 0;
+        function logQuestion(spentTime, savedTime, doneByUser) {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
-            logEntry.textContent = `Question ${currentQuestion + 1}: Time spent = ${formatTime(spentTime)}, Time saved = ${formatTime(leftoverTime)}`;
-            logDiv.appendChild(logEntry);
 
-            remainingTime += leftoverTime;
+            const text = document.createElement('span');
+            text.textContent = `Question ${currentQuestion + 1}: Time spent = ${formatTime(spentTime)}, Time saved = ${formatTime(savedTime)}`;
+
+            const status = document.createElement('span');
+            status.className = 'status';
+            status.textContent = doneByUser ? "✅" : "❌";
+            status.style.color = doneByUser ? "green" : "red";
+
+            logEntry.appendChild(text);
+            logEntry.appendChild(status);
+            logDiv.appendChild(logEntry);
+        }
+
+        function nextQuestion() {
+            clearInterval(timerInterval);
+            doneBtn.disabled = true;
             currentQuestion++;
 
             if (currentQuestion < totalQuestions) {
-                const questionsLeft = totalQuestions - currentQuestion;
-                questionTime = Math.ceil(remainingTime / questionsLeft);
+                questionTime = perQuestionTime;
                 startQuestionTimer();
             } else {
                 questionDisplay.textContent = "Practice session completed!";
@@ -168,16 +285,18 @@
 
         startBtn.addEventListener('click', () => {
             totalQuestions = parseInt(document.getElementById('numQuestions').value);
-            totalTime = parseInt(document.getElementById('totalTime').value) * 60; // convert to seconds
+            totalTime = parseInt(document.getElementById('totalTime').value) * 60; 
             currentQuestion = 0;
-            remainingTime = totalTime;
-            questionTime = Math.ceil(remainingTime / totalQuestions);
+            perQuestionTime = Math.floor(totalTime / totalQuestions);
+            questionTime = perQuestionTime;
+            totalSaved = 0;
             isPaused = false;
 
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             resumeBtn.disabled = true;
             logDiv.innerHTML = "<h2>Question Log</h2>";
+            updateSavedDisplay();
 
             startQuestionTimer();
         });
@@ -195,9 +314,19 @@
         });
 
         doneBtn.addEventListener('click', () => {
-            const leftoverTime = questionTime;
-            nextQuestion(leftoverTime);
+            clearInterval(timerInterval);
+            const savedTime = questionTime;
+            const spentTime = perQuestionTime - savedTime;
+            totalSaved += savedTime;
+            updateSavedDisplay();
+            logQuestion(spentTime, savedTime, true);
+            nextQuestion();
         });
+window.addEventListener("beforeunload", function (e) {
+    e.preventDefault();
+    e.returnValue = "";
+});
+
     </script>
 </body>
 </html>

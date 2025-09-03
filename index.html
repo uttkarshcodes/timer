@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Practice Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            display: flex;
+        }
+        .main-container {
+            flex: 1;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        input {
+            margin: 5px;
+            padding: 8px;
+            width: 100px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #timerDisplay {
+            font-size: 36px;
+            margin: 20px 0;
+        }
+        #questionDisplay {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+        #log {
+            margin-top: 30px;
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #log h2 {
+            text-align: center;
+        }
+        .log-entry {
+            border-bottom: 1px solid #ccc;
+            padding: 5px 0;
+        }
+        /* Notes Window */
+        #notes {
+            width: 300px;
+            background: #fff;
+            border-left: 2px solid #ccc;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+        }
+        #notes h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+        #notes textarea {
+            width: 100%;
+            height: 400px;
+            resize: none;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Dynamic Practice Timer</h1>
+        <div>
+            <label>Number of Questions: </label>
+            <input type="number" id="numQuestions" min="1" value="20"><br>
+            <label>Total Time (minutes): </label>
+            <input type="number" id="totalTime" min="1" value="240"><br>
+            <button id="startBtn">Start Practice</button>
+            <button id="pauseBtn" disabled>Pause</button>
+            <button id="resumeBtn" disabled>Resume</button>
+            <button id="doneBtn" disabled>Mark Done</button>
+        </div>
+
+        <div id="questionDisplay"></div>
+        <div id="timerDisplay">00:00</div>
+
+        <div id="log">
+            <h2>Question Log</h2>
+        </div>
+    </div>
+
+    <!-- Notes Window -->
+    <div id="notes">
+        <h2>Notes</h2>
+        <textarea placeholder="Write your temporary notes here..."></textarea>
+    </div>
+
+    <script>
+        let totalQuestions, totalTime, currentQuestion = 0;
+        let remainingTime = 0, questionTime = 0;
+        let timerInterval;
+        let isPaused = false;
+
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resumeBtn = document.getElementById('resumeBtn');
+        const doneBtn = document.getElementById('doneBtn');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const questionDisplay = document.getElementById('questionDisplay');
+        const logDiv = document.getElementById('log');
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startQuestionTimer() {
+            questionDisplay.textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
+            timerDisplay.textContent = formatTime(questionTime);
+            doneBtn.disabled = false;
+
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    questionTime--;
+                    remainingTime--;
+                    timerDisplay.textContent = formatTime(questionTime);
+                    if (questionTime <= 0) {
+                        clearInterval(timerInterval);
+                        nextQuestion(0); // 0 leftover because question fully used
+                    }
+                }
+            }, 1000);
+        }
+
+        function nextQuestion(leftoverTime) {
+            clearInterval(timerInterval);
+            doneBtn.disabled = true;
+
+            const spentTime = (Math.ceil(remainingTime / (totalQuestions - currentQuestion)) - leftoverTime) || 0;
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `Question ${currentQuestion + 1}: Time spent = ${formatTime(spentTime)}, Time saved = ${formatTime(leftoverTime)}`;
+            logDiv.appendChild(logEntry);
+
+            remainingTime += leftoverTime;
+            currentQuestion++;
+
+            if (currentQuestion < totalQuestions) {
+                const questionsLeft = totalQuestions - currentQuestion;
+                questionTime = Math.ceil(remainingTime / questionsLeft);
+                startQuestionTimer();
+            } else {
+                questionDisplay.textContent = "Practice session completed!";
+                timerDisplay.textContent = "00:00";
+                pauseBtn.disabled = true;
+                resumeBtn.disabled = true;
+                doneBtn.disabled = true;
+            }
+        }
+
+        startBtn.addEventListener('click', () => {
+            totalQuestions = parseInt(document.getElementById('numQuestions').value);
+            totalTime = parseInt(document.getElementById('totalTime').value) * 60; // convert to seconds
+            currentQuestion = 0;
+            remainingTime = totalTime;
+            questionTime = Math.ceil(remainingTime / totalQuestions);
+            isPaused = false;
+
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            resumeBtn.disabled = true;
+            logDiv.innerHTML = "<h2>Question Log</h2>";
+
+            startQuestionTimer();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            isPaused = true;
+            pauseBtn.disabled = true;
+            resumeBtn.disabled = false;
+        });
+
+        resumeBtn.addEventListener('click', () => {
+            isPaused = false;
+            pauseBtn.disabled = false;
+            resumeBtn.disabled = true;
+        });
+
+        doneBtn.addEventListener('click', () => {
+            const leftoverTime = questionTime;
+            nextQuestion(leftoverTime);
+        });
+    </script>
+</body>
+</html>

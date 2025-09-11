@@ -47,7 +47,6 @@
       margin-bottom: 15px;
     }
 
-    /* Two-column setup card */
     .two-column {
       display: flex;
       gap: 20px;
@@ -110,13 +109,13 @@
     #pauseBtn { background: #ff9800; color: #fff; }
     #resumeBtn { background: #4caf50; color: #fff; }
     #doneBtn { background: #e53935; color: #fff; }
+    #useBreakBtn { background: #ff9800; color: #fff; display: none; }
 
     button:hover:not(:disabled) {
       transform: translateY(-2px);
       filter: brightness(1.15);
     }
 
-    /* Timer and saved time row */
     .timer-row {
       display: flex;
       justify-content: space-between;
@@ -231,7 +230,6 @@
   <div class="main-container">
     <h1>Dynamic Practice Timer</h1>
 
-    <!-- Setup card with two-column -->
     <div class="card two-column">
       <div class="inputs">
         <label for="numQuestions">Questions</label>
@@ -244,10 +242,10 @@
         <button id="doneBtn" disabled>Done</button>
         <button id="pauseBtn" disabled>Pause</button>
         <button id="resumeBtn" disabled>Resume</button>
+        <button id="useBreakBtn">USE</button>
       </div>
     </div>
 
-    <!-- Timer display card -->
     <div class="card">
       <div id="questionDisplay"></div>
       <div class="timer-row">
@@ -256,137 +254,158 @@
       </div>
     </div>
 
-    <!-- Log -->
     <div id="log">
       <h2>Question Log</h2>
     </div>
   </div>
 
-  <!-- Notes -->
   <div id="notes">
     <h2>Notes</h2>
     <textarea placeholder="note here..."></textarea>
   </div>
 
   <script>
-        let totalQuestions, totalTime, currentQuestion = 0;
-        let perQuestionTime = 0, questionTime = 0;
-        let timerInterval;
-        let isPaused = false;
-        let totalSaved = 0;
+    let totalQuestions, totalTime, currentQuestion = 0;
+    let perQuestionTime = 0, questionTime = 0;
+    let timerInterval, breakInterval;
+    let isPaused = false;
+    let totalSaved = 0;
 
-        const startBtn = document.getElementById('startBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const resumeBtn = document.getElementById('resumeBtn');
-        const doneBtn = document.getElementById('doneBtn');
-        const timerDisplay = document.getElementById('timerDisplay');
-        const questionDisplay = document.getElementById('questionDisplay');
-        const logDiv = document.getElementById('log');
-        const savedTimeDisplay = document.getElementById('savedTimeDisplay');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const doneBtn = document.getElementById('doneBtn');
+    const useBreakBtn = document.getElementById('useBreakBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const questionDisplay = document.getElementById('questionDisplay');
+    const logDiv = document.getElementById('log');
+    const savedTimeDisplay = document.getElementById('savedTimeDisplay');
 
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
+    function formatTime(seconds) {
+      const sign = seconds < 0 ? "-" : "";
+      const absSec = Math.abs(seconds);
+      const mins = Math.floor(absSec / 60);
+      const secs = absSec % 60;
+      return `${sign}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
 
-        function updateSavedDisplay() {
-            savedTimeDisplay.textContent = `Time Saved: ${formatTime(totalSaved)}`;
-        }
+    function updateSavedDisplay() {
+      savedTimeDisplay.textContent = `Time Saved: ${formatTime(totalSaved)}`;
+    }
 
-        function startQuestionTimer() {
-            questionDisplay.textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
-            timerDisplay.textContent = formatTime(questionTime);
-            doneBtn.disabled = false;
+    function startQuestionTimer() {
+      questionDisplay.textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
+      timerDisplay.textContent = formatTime(questionTime);
+      doneBtn.disabled = false;
 
-            timerInterval = setInterval(() => {
-                if (!isPaused) {
-                    questionTime--;
-                    timerDisplay.textContent = formatTime(questionTime);
-                    if (questionTime <= 0) {
-                        clearInterval(timerInterval);
-                        logQuestion(perQuestionTime, 0, false);
-                        nextQuestion();
-                    }
-                }
-            }, 1000);
-        }
-
-        function logQuestion(spentTime, savedTime, doneByUser) {
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            const text = document.createElement('span');
-            text.textContent = `Question ${currentQuestion + 1}: Time spent = ${formatTime(spentTime)}, Time saved = ${formatTime(savedTime)}`;
-            const status = document.createElement('span');
-            status.className = 'status';
-            status.textContent = doneByUser ? "✅" : "❌";
-            status.style.color = doneByUser ? "green" : "red";
-            logEntry.appendChild(text);
-            logEntry.appendChild(status);
-            logDiv.appendChild(logEntry);
-        }
-
-        function nextQuestion() {
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          questionTime--;
+          timerDisplay.textContent = formatTime(questionTime);
+          if (questionTime <= 0) {
             clearInterval(timerInterval);
-            doneBtn.disabled = true;
-            currentQuestion++;
-            if (currentQuestion < totalQuestions) {
-                questionTime = perQuestionTime;
-                startQuestionTimer();
-            } else {
-                questionDisplay.textContent = "Practice session completed!";
-                timerDisplay.textContent = "00:00";
-                pauseBtn.disabled = true;
-                resumeBtn.disabled = true;
-                doneBtn.disabled = true;
-            }
-        }
-
-        startBtn.addEventListener('click', () => {
-            totalQuestions = parseInt(document.getElementById('numQuestions').value);
-            totalTime = parseInt(document.getElementById('totalTime').value) * 60;
-            currentQuestion = 0;
-            perQuestionTime = Math.floor(totalTime / totalQuestions);
-            questionTime = perQuestionTime;
-            totalSaved = 0;
-            isPaused = false;
-
-            startBtn.disabled = true;
-            pauseBtn.disabled = false;
-            resumeBtn.disabled = true;
-            doneBtn.disabled = false;
-            logDiv.innerHTML = "<h2>Question Log</h2>";
-            updateSavedDisplay();
-
-            startQuestionTimer();
-        });
-
-        pauseBtn.addEventListener('click', () => {
-            isPaused = true;
-            pauseBtn.disabled = true;
-            resumeBtn.disabled = false;
-        });
-
-        resumeBtn.addEventListener('click', () => {
-            isPaused = false;
-            pauseBtn.disabled = false;
-            resumeBtn.disabled = true;
-        });
-
-        doneBtn.addEventListener('click', () => {
-            clearInterval(timerInterval);
-            const savedTime = questionTime;
-            const spentTime = perQuestionTime - savedTime;
-            totalSaved += savedTime;
-            updateSavedDisplay();
-            logQuestion(spentTime, savedTime, true);
+            logQuestion(perQuestionTime, 0, false);
             nextQuestion();
-        });
+          }
+        }
+      }, 1000);
+    }
 
-        window.addEventListener("beforeunload", function (e) {
-            e.preventDefault();
-            e.returnValue = "";
-        });
+    function startBreak() {
+      breakInterval = setInterval(() => {
+        totalSaved--;
+        updateSavedDisplay();
+      }, 1000);
+    }
+
+    function stopBreak() {
+      clearInterval(breakInterval);
+    }
+
+    function logQuestion(spentTime, savedTime, doneByUser) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      const text = document.createElement('span');
+      text.textContent = `Question ${currentQuestion + 1}: Time spent = ${formatTime(spentTime)}, Time saved = ${formatTime(savedTime)}`;
+      const status = document.createElement('span');
+      status.className = 'status';
+      status.textContent = doneByUser ? "✅" : "❌";
+      status.style.color = doneByUser ? "green" : "red";
+      logEntry.appendChild(text);
+      logEntry.appendChild(status);
+      logDiv.appendChild(logEntry);
+    }
+
+    function nextQuestion() {
+      clearInterval(timerInterval);
+      doneBtn.disabled = true;
+      currentQuestion++;
+      if (currentQuestion < totalQuestions) {
+        questionTime = perQuestionTime;
+        startQuestionTimer();
+      } else {
+        questionDisplay.textContent = "Practice session completed!";
+        timerDisplay.textContent = "00:00";
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = true;
+        doneBtn.disabled = true;
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      totalQuestions = parseInt(document.getElementById('numQuestions').value);
+      totalTime = parseInt(document.getElementById('totalTime').value) * 60;
+      currentQuestion = 0;
+      perQuestionTime = Math.floor(totalTime / totalQuestions);
+      questionTime = perQuestionTime;
+      totalSaved = 0;
+      isPaused = false;
+
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      doneBtn.disabled = false;
+      useBreakBtn.style.display = "none";
+      logDiv.innerHTML = "<h2>Question Log</h2>";
+      updateSavedDisplay();
+
+      startQuestionTimer();
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      isPaused = true;
+      pauseBtn.disabled = true;
+      resumeBtn.disabled = false;
+      useBreakBtn.style.display = "block";
+    });
+
+    resumeBtn.addEventListener('click', () => {
+      isPaused = false;
+      pauseBtn.disabled = false;
+      resumeBtn.disabled = true;
+      stopBreak();
+      useBreakBtn.style.display = "none";
+    });
+
+    useBreakBtn.addEventListener('click', () => {
+      startBreak();
+      useBreakBtn.style.display = "none";
+    });
+
+    doneBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      const savedTime = questionTime;
+      const spentTime = perQuestionTime - savedTime;
+      totalSaved += savedTime;
+      updateSavedDisplay();
+      logQuestion(spentTime, savedTime, true);
+      nextQuestion();
+    });
+
+    window.addEventListener("beforeunload", function (e) {
+      e.preventDefault();
+      e.returnValue = "";
+    });
   </script>
 </body>
 </html>

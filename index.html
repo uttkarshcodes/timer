@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Dynamic Practice Timer</title>
   <style>
     body {
@@ -15,8 +15,8 @@
       color: #e0e0e0;
     }
 
-    /* Top-left button container */
-    .top-left {
+    /* Top-left button container - default desktop */
+    .top-btn-container {
       position: fixed;
       top: 20px;
       left: 20px;
@@ -36,11 +36,63 @@
       backdrop-filter: blur(4px);
       background-color: rgba(28, 28, 28, 0.9);
       font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
     }
 
     .help-btn:hover {
       background: #3a3a3a;
       transform: translateY(-1px);
+    }
+
+    /* Desktop: show "How to use", hide "?" */
+    .help-btn .mobile-icon {
+      display: none;
+    }
+    .help-btn .desktop-text {
+      display: inline;
+    }
+
+    /* Mobile adjustments: move to top-right, become round ? button */
+    @media (max-width: 700px) {
+      .top-btn-container {
+        top: 16px;
+        left: auto;
+        right: 16px;
+      }
+      .help-btn {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 22px;
+        font-weight: 700;
+        background-color: rgba(28, 28, 28, 0.95);
+        backdrop-filter: blur(6px);
+      }
+      /* Hide desktop text, show ? */
+      .help-btn .desktop-text {
+        display: none;
+      }
+      .help-btn .mobile-icon {
+        display: inline;
+        line-height: 1;
+      }
+    }
+
+    /* Extra small safety */
+    @media (max-width: 480px) {
+      .top-btn-container {
+        top: 12px;
+        right: 12px;
+      }
+      .help-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 20px;
+      }
     }
 
     /* Modal overlay styles - minimal */
@@ -117,41 +169,12 @@
       color: #ddd;
     }
 
-    /* Minimal text styles: bold headings, no extras */
-    .modal-body b, .modal-body strong {
-      color: #e0e0e0;
-    }
-
     .guide-text p {
       margin: 12px 0;
     }
 
-    .guide-text .heading {
-      font-weight: 700;
-      font-size: 1rem;
-      margin-top: 16px;
-      margin-bottom: 6px;
+    .guide-text strong {
       color: #e0e0e0;
-      display: block;
-    }
-
-    .guide-text .heading:first-of-type {
-      margin-top: 0;
-    }
-
-    .guide-text .btn-line {
-      margin: 8px 0;
-      line-height: 1.5;
-    }
-
-    .rule-block {
-      margin-top: 14px;
-      padding-top: 6px;
-    }
-
-    hr {
-      margin: 16px 0;
-      border-color: #2c2c2c;
     }
 
     @media (max-width: 600px) {
@@ -372,12 +395,15 @@
   </style>
 </head>
 <body>
-  <!-- "How to use" button at top left -->
-  <div class="top-left">
-    <button class="help-btn" id="howToUseBtn">How to use</button>
+  <!-- Help button container - desktop shows "How to use", mobile shows "?" via CSS -->
+  <div class="top-btn-container">
+    <button class="help-btn" id="howToUseBtn">
+      <span class="desktop-text">How to use</span>
+      <span class="mobile-icon">?</span>
+    </button>
   </div>
 
-  <!-- Minimal modal popup without emojis / decorative sections -->
+  <!-- Minimal modal popup -->
   <div class="modal-overlay" id="guideModal">
     <div class="modal-content">
       <div class="modal-header">
@@ -387,10 +413,10 @@
       <div class="modal-body">
         <div class="guide-text">
           <p><strong>The Problem</strong><br>
-          I used to sit down with 20 physics mains questions, assign an hour, and somehow spend two. One question eats up 20 minutes, a "quick" break stretches to 30, and before I knew it my session had derailed. This app keeps that from happening.</p>
+          I used to sit down with 20 physics mains questions, assign an hour, and somehow spend two when one question eats up 20 minutes, a "quick" break stretches to 30, and before you know it your session is off the tracks. This app keeps that from happening.</p>
 
           <p><strong>The Solution</strong><br>
-          You set a total time and a question count. The app divides the time equally and holds you to it, one question at a time. If you're doing 20 JEE Advanced physics PYQs in 3 hours, each question gets exactly 9 minutes. When the time’s up for a particular question, it moves on.</p>
+          You set a total time and a question count. The app divides the time equally and holds you to it, one question at a time. If you're doing 20 JEE Advanced physics PYQs in 3 hours, each question gets exactly 9 minutes. When the time's up for a particular question, it moves on.</p>
 
           <p><strong>The Buttons</strong><br>
           <strong>Start:</strong> begins the session with the first question.<br>
@@ -623,7 +649,7 @@
       e.returnValue = "";
     });
 
-    // Modal logic for How to use button (minimal, no extra styling)
+    // Modal logic
     const modalOverlay = document.getElementById('guideModal');
     const howToUseBtn = document.getElementById('howToUseBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');

@@ -7,12 +7,13 @@
   <style>
     body {
       margin: 0;
-      font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
+      font-family: poppins, -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
       flex-direction: row;
       min-height: 100vh;
-      background: #121212;
-      color: #e0e0e0;
+      /* background: #121212; */
+      background: #272320;
+      color: #ffffff;
     }
 
     /* Top-left button container - default desktop */
@@ -39,7 +40,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0;
+      gap: 6px;
     }
 
     .help-btn:hover {
@@ -47,15 +48,7 @@
       transform: translateY(-1px);
     }
 
-    /* Desktop: show "How to use", hide "?" */
-    .help-btn .mobile-icon {
-      display: none;
-    }
-    .help-btn .desktop-text {
-      display: inline;
-    }
-
-    /* Mobile adjustments: move to top-right, become round ? button */
+    /* Mobile adjustments: move to top-right, become round button */
     @media (max-width: 700px) {
       .top-btn-container {
         top: 16px;
@@ -67,18 +60,16 @@
         height: 42px;
         padding: 0;
         border-radius: 50%;
-        font-size: 22px;
-        font-weight: 700;
         background-color: rgba(28, 28, 28, 0.95);
         backdrop-filter: blur(6px);
       }
-      /* Hide desktop text, show ? */
+      /* Hide desktop text */
       .help-btn .desktop-text {
         display: none;
       }
-      .help-btn .mobile-icon {
-        display: inline;
-        line-height: 1;
+      .help-btn svg {
+        width: 22px;
+        height: 22px;
       }
     }
 
@@ -91,7 +82,10 @@
       .help-btn {
         width: 38px;
         height: 38px;
-        font-size: 20px;
+      }
+      .help-btn svg {
+        width: 20px;
+        height: 20px;
       }
     }
 
@@ -167,6 +161,26 @@
       font-size: 0.95rem;
       line-height: 1.5;
       color: #ddd;
+      
+      /* Subtle theme scrollbar for Firefox */
+      scrollbar-width: thin;
+      scrollbar-color: #4a4a4a #1e1e1e;
+    }
+
+    /* Subtle theme scrollbar for WebKit (Chrome, Safari, Edge) */
+    .modal-body::-webkit-scrollbar {
+      width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track {
+      background: #1e1e1e; 
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+      background: #4a4a4a; 
+      border-radius: 4px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover {
+      background: #666666; 
     }
 
     .guide-text p {
@@ -201,7 +215,7 @@
     }
 
     .card {
-      background: #1a1a1a;
+      background: #1E1D1B;
       padding: 20px;
       border-radius: 12px;
       border: 1px solid #2a2a2a;
@@ -225,14 +239,14 @@
 
     .inputs label {
       font-size: 0.85rem;
-      color: #b0b0b0;
+      color: #ffffff;
     }
 
     .inputs input {
       padding: 10px;
       border-radius: 8px;
       border: 1px solid #333;
-      background: #1e1e1e;
+      background: #272625;
       color: #e0e0e0;
       font-size: 14px;
       outline: none;
@@ -259,16 +273,20 @@
       font-weight: 500;
       cursor: pointer;
       transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    #startBtn { background: #1e90ff; color: #fff; }
-    #pauseBtn { background: #ff9800; color: #fff; }
-    #resumeBtn { background: #4caf50; color: #fff; }
-    #doneBtn { background: #e53935; color: #fff; }
+    #startBtn { background: #F59E0B; color: #fff; }
+    #pauseBtn { background: #F59E0B; color: #fff; }
+    #resumeBtn { background: #F59E0B; color: #fff; }
+    #doneBtn { background: #F59E0B; color: #fff; }
 
     button:disabled {
-      background: #2a2a2a;
-      color: #666;
+      background: #2a2a2a !important;
+      color: #666 !important;
       cursor: not-allowed;
       filter: blur(0.5px) brightness(0.7);
     }
@@ -287,12 +305,12 @@
     #timerDisplay {
       font-size: 2rem;
       font-weight: bold;
-      color: #1e90ff;
+      color: #ffffff;
     }
 
     #savedTimeDisplay {
       font-weight: bold;
-      color: #1e90ff;
+      color: #F59E0B;
       font-size: 0.9rem;
     }
 
@@ -309,7 +327,7 @@
 
     #notes {
       width: 320px;
-      background: #181818;
+      background: #1E1D1B;
       border-left: 1px solid #2a2a2a;
       padding: 20px;
       display: flex;
@@ -320,7 +338,7 @@
 
     #notes h2 {
       font-size: 1.2rem;
-      color: #1e90ff;
+      color: #F59E0B;
       text-align: center;
       margin-top: 0;
     }
@@ -331,7 +349,7 @@
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #333;
-      background: #1e1e1e;
+      background: #272625;
       color: #e0e0e0;
       font-size: 14px;
     }
@@ -395,11 +413,15 @@
   </style>
 </head>
 <body>
-  <!-- Help button container - desktop shows "How to use", mobile shows "?" via CSS -->
+  <!-- Help button container -->
   <div class="top-btn-container">
     <button class="help-btn" id="howToUseBtn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
       <span class="desktop-text">How to use</span>
-      <span class="mobile-icon">?</span>
     </button>
   </div>
 
@@ -446,10 +468,30 @@
         <input type="number" id="totalTime" min="1" value="240">
       </div>
       <div class="buttons">
-        <button id="startBtn">Start</button>
-        <button id="doneBtn" disabled>Done</button>
-        <button id="pauseBtn" disabled>Pause</button>
-        <button id="resumeBtn" disabled>Resume</button>
+        <button id="startBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+          </svg>
+          Start
+        </button>
+        <button id="doneBtn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd" />
+          </svg>
+          Done
+        </button>
+        <button id="pauseBtn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+          </svg>
+          Pause
+        </button>
+        <button id="resumeBtn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+            <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+          </svg>
+          Resume
+        </button>
       </div>
     </div>
 

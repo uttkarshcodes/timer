@@ -16,7 +16,6 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-3PWELR7FV0');
   </script>
 
@@ -40,7 +39,6 @@
       }
     }
 
-    /* Top-left button container */
     .top-left-btn-container {
       position: fixed;
       top: 20px;
@@ -48,7 +46,6 @@
       z-index: 1000;
     }
 
-    /* Top-right toggle button container */
     .top-right-btn-container {
       position: fixed;
       top: 20px;
@@ -97,7 +94,6 @@
       .help-btn .desktop-text { display: none; }
     }
 
-    /* Modal styles */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -142,7 +138,6 @@
     .guide-text p { margin: 12px 0; }
     .guide-text strong { color: #e0e0e0; font-weight: 600; }
 
-    /* Main App Layout */
     .main-container {
       flex: 1; padding: 30px; padding-top: 60px;
       display: flex; flex-direction: column; align-items: center;
@@ -190,7 +185,14 @@
     button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
 
     .timer-info { display: flex; flex-direction: column; gap: 4px; }
-    #timerDisplay { font-size: 2.5rem; font-weight: 700; color: #ffffff; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    #timerDisplay { 
+      font-size: 2.5rem; 
+      font-weight: 700; 
+      color: #ffffff; 
+      letter-spacing: -1px; 
+      font-variant-numeric: tabular-nums;
+      transition: color 0.3s ease; /* Smooth transition for visual urgency */
+    }
     #savedTimeDisplay { font-weight: 600; color: #F59E0B; font-size: 0.9rem; }
     #questionDisplay { font-size: 1rem; color: #aaa; margin: 0 0 4px 0; font-weight: 500; }
     .image-container img { width: 200px; border-radius: 12px; border: 1px solid #2a2a2a; }
@@ -213,7 +215,7 @@
     /* ======== SIDEBAR & Q-BOXES ======== */
     .sidebar {
       position: fixed; top: 16px; right: -360px; 
-      width: 320px; max-width: calc(100vw - 32px); /* Ensures it fits nicely on small phones */
+      width: 320px; max-width: calc(100vw - 32px); 
       height: calc(100vh - 32px); 
       background: #1E1D1B; 
       border: 1px solid #333; 
@@ -252,7 +254,6 @@
       transition: all 0.2s ease; user-select: none;
     }
 
-    /* The currently active question */
     .q-box.active {
       background: #F59E0B;
       border-color: #F59E0B;
@@ -261,7 +262,6 @@
       transform: translateY(-2px) scale(1.05); 
     }
 
-    /* Previously completed questions */
     .q-box.completed {
       background: #1E1D1B;
       color: #555;
@@ -276,8 +276,7 @@
       .timer-section { flex-direction: row; align-items: center; justify-content: space-between; }
       .image-container img { width: 160px; }
       #timerDisplay { font-size: 2rem; }
-      
-      body.sidebar-open { padding-right: 0; } /* Overlays instead of squishing body on mobile */
+      body.sidebar-open { padding-right: 0; } 
     }
   </style>
 </head>
@@ -387,8 +386,7 @@
       <h2>Progress</h2>
       <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
     </div>
-    <div class="sidebar-grid" id="sidebarGrid">
-      </div>
+    <div class="sidebar-grid" id="sidebarGrid"></div>
   </div>
 
   <script>
@@ -398,6 +396,7 @@
     let isPaused = false;
     let totalSaved = 0;
     let pauseDecrementInterval = null;
+    let audioCtx = null; // Web Audio Context
 
     const startBtn = document.getElementById('startBtn');
     const pauseBtn = document.getElementById('pauseBtn');
@@ -413,6 +412,49 @@
     const closeSidebarBtn = document.getElementById('closeSidebarBtn');
     const openSidebarBtn = document.getElementById('openSidebarBtn');
     const topRightBtnContainer = document.getElementById('topRightBtnContainer');
+
+    // --- Web Audio Synthesizer Functions ---
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, type, duration) {
+      if (!audioCtx) return;
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      
+      // Soft volume fade out to prevent clicking
+      gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); 
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + duration);
+    }
+
+    function playWarningTick() {
+      // Short double blip
+      playTone(600, 'sine', 0.1);
+      setTimeout(() => playTone(800, 'sine', 0.1), 150);
+    }
+
+    function playDoneChime() {
+      // Pleasant melodic chime
+      playTone(523.25, 'sine', 0.4); // C5
+      setTimeout(() => playTone(659.25, 'sine', 0.6), 200); // E5
+    }
+    // ---------------------------------------
 
     function formatTime(seconds) {
       const sign = seconds < 0 ? "-" : "";
@@ -451,7 +493,6 @@
         sidebarGrid.appendChild(box);
       }
       
-      // Auto-open sidebar ONLY on larger screens
       if (window.innerWidth > 900) {
         openSidebarPanel();
       }
@@ -489,6 +530,19 @@
     closeSidebarBtn.addEventListener('click', closeSidebarPanel);
     openSidebarBtn.addEventListener('click', openSidebarPanel);
 
+    function updateVisualUrgency() {
+      if (perQuestionTime <= 0) return;
+      const percentage = (questionTime / perQuestionTime) * 100;
+      
+      if (percentage <= 10) {
+        timerDisplay.style.color = '#ef4444'; // Red
+      } else if (percentage <= 25) {
+        timerDisplay.style.color = '#F59E0B'; // Yellow
+      } else {
+        timerDisplay.style.color = '#ffffff'; // Default White
+      }
+    }
+
     function startQuestionTimer() {
       clearTimerInterval();
       clearPauseInterval();
@@ -499,15 +553,25 @@
       
       questionDisplay.textContent = `Question ${currentQuestion + 1} of ${totalQuestions}`;
       timerDisplay.textContent = formatTime(questionTime);
+      updateVisualUrgency();
       
       timerInterval = setInterval(() => {
         if (!isPaused) {
           if (questionTime > 0) {
             questionTime--;
             timerDisplay.textContent = formatTime(questionTime);
+            updateVisualUrgency();
+
+            // 1-minute warning cue
+            if (questionTime === 60) {
+              playWarningTick();
+            }
           }
+          
           if (questionTime <= 0) {
             clearTimerInterval();
+            playDoneChime(); // Play transition sound
+            
             if (questionTime < 0) {
               totalSaved += questionTime;   
             } else {
@@ -534,6 +598,7 @@
       } else {
         questionDisplay.textContent = "Practice session completed!";
         timerDisplay.textContent = "00:00";
+        timerDisplay.style.color = "#ffffff"; // Reset color
         pauseBtn.disabled = true;
         resumeBtn.disabled = true;
         doneBtn.disabled = true;
@@ -551,6 +616,7 @@
       if (questionTime > 0) {
         totalSaved += questionTime;
       }
+      playDoneChime(); // Play the transition sound on manual done too
       updateSavedDisplay();
       nextQuestion();
     }
@@ -586,6 +652,8 @@
     }
 
     function handleStart() {
+      initAudio(); // Initialize audio context on first user interaction
+      
       clearTimerInterval();
       clearPauseInterval();
       const questionsInput = document.getElementById('numQuestions');

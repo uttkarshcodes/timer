@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Dynamic Practice Timer</title>
   
-  <!-- Favicon fetched directly from jeearchive.in -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <link rel="icon" href="https://s2.googleusercontent.com/s2/favicons?domain=jeearchive.in&sz=64" />
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-3PWELR7FV0"></script>
@@ -20,25 +23,43 @@
   <style>
     body {
       margin: 0;
-      font-family: poppins, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       min-height: 100vh;
-      /* background: #121212; */
       background: #272320;
       color: #ffffff;
+      transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Top-left button container - default desktop */
-    .top-btn-container {
+    @media (min-width: 901px) {
+      body.sidebar-open {
+        padding-right: 352px; 
+      }
+    }
+
+    /* Top-left button container */
+    .top-left-btn-container {
       position: fixed;
       top: 20px;
       left: 20px;
       z-index: 1000;
     }
 
-    .help-btn {
-      background: #2c2c2c;
+    /* Top-right toggle button container */
+    .top-right-btn-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: none; 
+      transition: opacity 0.3s ease;
+    }
+
+    .help-btn, .toggle-sidebar-btn {
+      background: rgba(28, 28, 28, 0.9);
       border: 1px solid #3a3a3a;
       color: #e0e0e0;
       font-size: 0.9rem;
@@ -46,9 +67,8 @@
       padding: 8px 16px;
       border-radius: 40px;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s, transform 0.1s, color 0.2s;
       backdrop-filter: blur(4px);
-      background-color: rgba(28, 28, 28, 0.9);
       font-family: inherit;
       display: flex;
       align-items: center;
@@ -56,378 +76,213 @@
       gap: 6px;
     }
 
-    .help-btn:hover {
+    .toggle-sidebar-btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #1a1918;
+      border-color: #333;
+    }
+
+    .help-btn:hover, .toggle-sidebar-btn:hover {
       background: #3a3a3a;
+      color: #fff;
       transform: translateY(-1px);
     }
 
-    /* Mobile adjustments: move to top-right, become round button */
     @media (max-width: 700px) {
-      .top-btn-container {
-        top: 16px;
-        left: auto;
-        right: 16px;
-      }
-      .help-btn {
-        width: 42px;
-        height: 42px;
-        padding: 0;
-        border-radius: 50%;
-        background-color: rgba(28, 28, 28, 0.95);
-        backdrop-filter: blur(6px);
-      }
-      /* Hide desktop text */
-      .help-btn .desktop-text {
-        display: none;
-      }
-      .help-btn svg {
-        width: 22px;
-        height: 22px;
-      }
+      .top-left-btn-container { top: 16px; left: 16px; }
+      .top-right-btn-container { top: 16px; right: 16px; }
+      .help-btn, .toggle-sidebar-btn { width: 42px; height: 42px; padding: 0; border-radius: 50%; }
+      .toggle-sidebar-btn { border-radius: 10px; }
+      .help-btn .desktop-text { display: none; }
     }
 
-    /* Extra small safety */
-    @media (max-width: 480px) {
-      .top-btn-container {
-        top: 12px;
-        right: 12px;
-      }
-      .help-btn {
-        width: 38px;
-        height: 38px;
-      }
-      .help-btn svg {
-        width: 20px;
-        height: 20px;
-      }
-    }
-
-    /* Modal overlay styles - minimal */
+    /* Modal styles */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background-color: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(5px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       z-index: 2000;
-      visibility: hidden;
-      opacity: 0;
+      visibility: hidden; opacity: 0;
       transition: visibility 0.2s, opacity 0.2s;
     }
 
-    .modal-overlay.active {
-      visibility: visible;
-      opacity: 1;
-    }
+    .modal-overlay.active { visibility: visible; opacity: 1; }
 
     .modal-content {
       background: #1e1e1e;
-      max-width: 550px;
-      width: 90%;
-      max-height: 85vh;
-      border-radius: 16px;
-      border: 1px solid #333;
-      box-shadow: 0 25px 40px rgba(0, 0, 0, 0.6);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      max-width: 550px; width: 90%; max-height: 85vh;
+      border-radius: 16px; border: 1px solid #333;
+      display: flex; flex-direction: column; overflow: hidden;
     }
 
     .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 22px 10px 22px;
-      border-bottom: 1px solid #2a2a2a;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 18px 22px 10px 22px; border-bottom: 1px solid #2a2a2a;
     }
 
-    .modal-header h2 {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #e0e0e0;
-    }
-
+    .modal-header h2 { margin: 0; font-size: 1.3rem; font-weight: 600; color: #e0e0e0; letter-spacing: 0.5px; }
+    
     .close-modal {
-      background: none;
-      border: none;
-      color: #aaa;
-      font-size: 26px;
-      cursor: pointer;
-      line-height: 1;
-      padding: 0;
-      transition: color 0.2s;
+      background: none; border: none; color: #aaa; font-size: 26px;
+      cursor: pointer; line-height: 1; padding: 0; transition: color 0.2s;
     }
-
-    .close-modal:hover {
-      color: #fff;
-    }
+    .close-modal:hover { color: #fff; }
 
     .modal-body {
-      padding: 18px 24px 24px 24px;
-      overflow-y: auto;
-      font-size: 0.95rem;
-      line-height: 1.5;
-      color: #ddd;
-      
-      /* Subtle theme scrollbar for Firefox */
-      scrollbar-width: thin;
-      scrollbar-color: #4a4a4a #1e1e1e;
+      padding: 18px 24px 24px 24px; overflow-y: auto; font-size: 0.95rem; line-height: 1.6; color: #ccc;
+      scrollbar-width: thin; scrollbar-color: #4a4a4a #1e1e1e;
     }
+    .modal-body::-webkit-scrollbar { width: 8px; }
+    .modal-body::-webkit-scrollbar-track { background: #1e1e1e; border-radius: 4px; }
+    .modal-body::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 4px; }
+    .modal-body::-webkit-scrollbar-thumb:hover { background: #666666; }
+    .guide-text p { margin: 12px 0; }
+    .guide-text strong { color: #e0e0e0; font-weight: 600; }
 
-    /* Subtle theme scrollbar for WebKit (Chrome, Safari, Edge) */
-    .modal-body::-webkit-scrollbar {
-      width: 8px;
-    }
-    .modal-body::-webkit-scrollbar-track {
-      background: #1e1e1e; 
-      border-radius: 4px;
-    }
-    .modal-body::-webkit-scrollbar-thumb {
-      background: #4a4a4a; 
-      border-radius: 4px;
-    }
-    .modal-body::-webkit-scrollbar-thumb:hover {
-      background: #666666; 
-    }
-
-    .guide-text p {
-      margin: 12px 0;
-    }
-
-    .guide-text strong {
-      color: #e0e0e0;
-    }
-
-    @media (max-width: 600px) {
-      .modal-content {
-        width: 92%;
-      }
-      .modal-body {
-        padding: 16px;
-      }
-    }
-
+    /* Main App Layout */
     .main-container {
-      flex: 1;
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      flex: 1; padding: 30px; padding-top: 60px;
+      display: flex; flex-direction: column; align-items: center;
     }
 
     h1 {
-      font-size: 2rem;
-      font-weight: 600;
-      margin-bottom: 20px;
+      font-size: 1.8rem; font-weight: 600; margin-bottom: 24px; text-align: center; letter-spacing: -0.5px;
     }
 
     .card {
-      background: #1E1D1B;
-      padding: 20px;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-      margin-bottom: 20px;
-      width: 100%;
-      max-width: 700px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+      background: #1E1D1B; padding: 24px; border-radius: 16px;
+      border: 1px solid #333; margin-bottom: 20px; width: 100%; max-width: 700px;
+      box-sizing: border-box; display: flex; flex-direction: row; align-items: center;
+      justify-content: space-between; gap: 20px;
     }
 
-    .inputs {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .inputs label {
-      font-size: 0.85rem;
-      color: #ffffff;
-    }
-
+    .inputs { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .inputs label { font-size: 0.85rem; font-weight: 500; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
     .inputs input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #272625;
-      color: #e0e0e0;
-      font-size: 14px;
-      outline: none;
+      padding: 12px; border-radius: 10px; 
+      border: 1px solid #333; 
+      background: #272625; 
+      color: #e0e0e0; font-size: 15px; outline: none; font-family: inherit;
+      transition: border-color 0.2s;
     }
-
-    .inputs input:focus {
-      border-color: #1e90ff;
-    }
+    .inputs input:focus { border-color: #F59E0B; }
 
     .buttons {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-width: 120px;
-      margin-left: 30px;
+      display: flex; flex-direction: column; gap: 10px; min-width: 130px; margin-left: 30px;
     }
 
     .buttons button {
-      width: 100%;
-      padding: 10px 18px;
-      border-radius: 8px;
-      border: none;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
+      width: 100%; padding: 12px 18px; border-radius: 10px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
       transition: background 0.2s, transform 0.1s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
 
-    #startBtn { background: #F59E0B; color: #fff; }
-    #pauseBtn { background: #F59E0B; color: #fff; }
-    #resumeBtn { background: #F59E0B; color: #fff; }
-    #doneBtn { background: #F59E0B; color: #fff; }
+    #startBtn, #pauseBtn, #resumeBtn, #doneBtn { background: #F59E0B; color: #ffffff; }
 
     button:disabled {
-      background: #2a2a2a !important;
-      color: #666 !important;
-      cursor: not-allowed;
-      filter: blur(0.5px) brightness(0.7);
+      background: #2a2a2a !important; color: #666 !important;
+      cursor: not-allowed; filter: blur(0px) brightness(0.7);
     }
+    button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
 
-    button:hover:not(:disabled) {
-      transform: translateY(-2px);
-      filter: brightness(1.15);
-    }
-
-    .timer-info {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    #timerDisplay {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #ffffff;
-    }
-
-    #savedTimeDisplay {
-      font-weight: bold;
-      color: #F59E0B;
-      font-size: 0.9rem;
-    }
-
-    #questionDisplay {
-      font-size: 1rem;
-      margin: 0 0 8px 0;
-    }
-
-    .image-container img {
-      width: 200px;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-    }
+    .timer-info { display: flex; flex-direction: column; gap: 4px; }
+    #timerDisplay { font-size: 2.5rem; font-weight: 700; color: #ffffff; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+    #savedTimeDisplay { font-weight: 600; color: #F59E0B; font-size: 0.9rem; }
+    #questionDisplay { font-size: 1rem; color: #aaa; margin: 0 0 4px 0; font-weight: 500; }
+    .image-container img { width: 200px; border-radius: 12px; border: 1px solid #2a2a2a; }
 
     #notes {
-      width: 320px;
-      background: #1E1D1B;
-      border-left: 1px solid #2a2a2a;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      max-width: 100%;
-      box-sizing: border-box;
+      width: 100%; max-width: 700px; background: #1E1D1B;
+      border: 1px solid #333; border-radius: 16px; padding: 24px;
+      display: flex; flex-direction: column; box-sizing: border-box;
+      margin-bottom: 20px; height: 250px;
     }
-
-    #notes h2 {
-      font-size: 1.2rem;
-      color: #F59E0B;
-      text-align: center;
-      margin-top: 0;
-    }
-
+    #notes h2 { font-size: 1.1rem; font-weight: 600; color: #F59E0B; margin-top: 0; margin-bottom: 15px; }
     #notes textarea {
-      flex: 1;
-      resize: none;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #272625;
-      color: #e0e0e0;
-      font-size: 14px;
+      flex: 1; resize: none; padding: 16px; border-radius: 10px; font-family: inherit;
+      border: 1px solid #333; 
+      background: #272625; 
+      color: #e0e0e0; font-size: 14px; line-height: 1.5;
+    }
+    #notes textarea:focus { outline: none; border-color: #555; }
+
+    /* ======== SIDEBAR & Q-BOXES ======== */
+    .sidebar {
+      position: fixed; top: 16px; right: -360px; 
+      width: 320px; max-width: calc(100vw - 32px); /* Ensures it fits nicely on small phones */
+      height: calc(100vh - 32px); 
+      background: #1E1D1B; 
+      border: 1px solid #333; 
+      border-radius: 20px; 
+      padding: 24px; box-sizing: border-box;
+      transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      z-index: 1500; overflow-y: auto; display: flex; flex-direction: column;
+      opacity: 0; pointer-events: none;
+    }
+
+    .sidebar.active { right: 16px; opacity: 1; pointer-events: all; }
+
+    .sidebar-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    }
+    .sidebar-header h2 { margin: 0; font-size: 1.1rem; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+
+    .close-sidebar-btn {
+      background: none; border: none; color: #666; font-size: 24px;
+      cursor: pointer; padding: 0; line-height: 1; transition: color 0.2s;
+    }
+    .close-sidebar-btn:hover { color: #ccc; }
+
+    .sidebar-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+      gap: 12px; padding-bottom: 30px;
+    }
+
+    .q-box {
+      aspect-ratio: 1;
+      background: #272625; 
+      border: 1px solid #333; 
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 500; color: #777;
+      transition: all 0.2s ease; user-select: none;
+    }
+
+    /* The currently active question */
+    .q-box.active {
+      background: #F59E0B;
+      border-color: #F59E0B;
+      color: #ffffff; 
+      font-weight: 700;
+      transform: translateY(-2px) scale(1.05); 
+    }
+
+    /* Previously completed questions */
+    .q-box.completed {
+      background: #1E1D1B;
+      color: #555;
+      border-color: #2a2a2a;
     }
 
     @media (max-width: 900px) {
-      body { flex-direction: column; }
-
-      #notes {
-        width: 100%;
-        max-width: 100%;
-        border-left: none;
-        border-top: 1px solid #2a2a2a;
-        height: 200px;
-      }
-
-      .card {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .inputs, .buttons {
-        width: 100%;
-        margin-left: 0;
-      }
-
-      .buttons {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 15px;
-      }
-
-      .buttons button {
-        flex: 1 1 45%;
-        min-width: 100px;
-      }
-
-      .timer-section {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .image-container img {
-        width: 160px;
-      }
-
-      #timerDisplay {
-        font-size: 1.8rem;
-      }
-
-      #questionDisplay {
-        font-size: 0.95rem;
-      }
-
-      #savedTimeDisplay {
-        font-size: 0.85rem;
-      }
+      .card { flex-direction: column; align-items: stretch; }
+      .inputs, .buttons { width: 100%; margin-left: 0; }
+      .buttons { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px; }
+      .buttons button { flex: 1 1 45%; min-width: 100px; }
+      .timer-section { flex-direction: row; align-items: center; justify-content: space-between; }
+      .image-container img { width: 160px; }
+      #timerDisplay { font-size: 2rem; }
+      
+      body.sidebar-open { padding-right: 0; } /* Overlays instead of squishing body on mobile */
     }
   </style>
 </head>
 <body>
-  <!-- Help button container -->
-  <div class="top-btn-container">
+  <div class="top-left-btn-container">
     <button class="help-btn" id="howToUseBtn">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
@@ -438,30 +293,34 @@
     </button>
   </div>
 
-  <!-- Minimal modal popup -->
+  <div class="top-right-btn-container" id="topRightBtnContainer">
+    <button class="toggle-sidebar-btn" id="openSidebarBtn" title="Toggle Progress Sidebar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <line x1="15" y1="3" x2="15" y2="21"></line>
+      </svg>
+    </button>
+  </div>
+
   <div class="modal-overlay" id="guideModal">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>QUICK GUIDE</h2>
+        <h2>Quick Guide</h2>
         <button class="close-modal" id="closeModalBtn">&times;</button>
       </div>
       <div class="modal-body">
         <div class="guide-text">
           <p><strong>The Problem</strong><br>
-          I used to sit down with 20 physics mains questions, assign an hour, and somehow spend two. Sometimes one question eats up 20 minutes, a 5 minutes break stretches to 30 minutes, and before you know it your session has derailed. This app keeps that from happening.</p>
-
+          I used to sit down with 20 physics mains questions, assign an hour, and somehow spend two when one question eats up 20 minutes, a "quick" break stretches to 30, and before you know it your session is off the tracks. This app keeps that from happening.</p>
           <p><strong>The Solution</strong><br>
-          You set a total time and a question count. The app divides the time equally. If you're doing 20 JEE Advanced physics PYQs in 3 hours, each question gets exactly 9 minutes. When the time's up for a particular question, it moves on.</p>
-
+          You set a total time and a question count. The app divides the time equally and holds you to it, one question at a time. If you're doing 20 JEE Advanced physics PYQs in 3 hours, each question gets exactly 9 minutes. When the time's up for a particular question, it moves on.</p>
           <p><strong>The Buttons</strong><br>
           <strong>Start:</strong> begins the session with the first question.<br>
           <strong>Done:</strong> you finished early. Any remaining time from this question gets added to your <strong>Saved Time</strong> bank, which you can spend later on a harder question.<br>
           <strong>Pause:</strong> you need more time on this question, or you're stepping away. The timer stops and you can see exactly how much extra time you're taking. Use this for bathroom breaks too.<br>
           <strong>Resume:</strong> picks up where you left off.</p>
-
           <p><strong>The Notes Section</strong><br>
           I used to note question numbers I wanted to revisit once done with all questions. Use it however you like.</p>
-
           <p><strong>One Rule</strong><br>
           This app is for a single focused session. Don't enter 600 minutes and 200 questions expecting to run it all day. Set it for one sitting, sit down, and start.</p>
         </div>
@@ -472,7 +331,6 @@
   <div class="main-container">
     <h1>Dynamic Practice Timer</h1>
 
-    <!-- Setup card -->
     <div class="card">
       <div class="inputs">
         <label for="numQuestions">Questions</label>
@@ -508,23 +366,29 @@
       </div>
     </div>
 
-    <!-- Timer card with image -->
     <div class="card timer-section">
       <div class="timer-info">
         <div id="questionDisplay">Question 1 of 20</div>
         <div id="timerDisplay">00:00</div>
         <div id="savedTimeDisplay">Time Saved: 00:00</div>
       </div>
-      <div class="image-container">
-        <!-- image kept empty as original -->
-      </div>
+      <div class="image-container"></div>
     </div>
+
+    <div id="notes">
+      <h2>Notes</h2>
+      <textarea placeholder="Jot down formulas or question numbers to revisit..."></textarea>
+    </div>
+
   </div>
 
-  <!-- Notes -->
-  <div id="notes">
-    <h2>Notes</h2>
-    <textarea placeholder="note here..."></textarea>
+  <div id="progressSidebar" class="sidebar">
+    <div class="sidebar-header">
+      <h2>Progress</h2>
+      <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
+    </div>
+    <div class="sidebar-grid" id="sidebarGrid">
+      </div>
   </div>
 
   <script>
@@ -542,6 +406,13 @@
     const timerDisplay = document.getElementById('timerDisplay');
     const questionDisplay = document.getElementById('questionDisplay');
     const savedTimeDisplay = document.getElementById('savedTimeDisplay');
+    
+    // Sidebar elements
+    const progressSidebar = document.getElementById('progressSidebar');
+    const sidebarGrid = document.getElementById('sidebarGrid');
+    const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+    const openSidebarBtn = document.getElementById('openSidebarBtn');
+    const topRightBtnContainer = document.getElementById('topRightBtnContainer');
 
     function formatTime(seconds) {
       const sign = seconds < 0 ? "-" : "";
@@ -568,6 +439,55 @@
         pauseDecrementInterval = null;
       }
     }
+
+    // Sidebar Logic
+    function initSidebar() {
+      sidebarGrid.innerHTML = '';
+      for (let i = 0; i < totalQuestions; i++) {
+        const box = document.createElement('div');
+        box.className = 'q-box';
+        box.id = `qbox-${i}`;
+        box.textContent = i + 1;
+        sidebarGrid.appendChild(box);
+      }
+      
+      // Auto-open sidebar ONLY on larger screens
+      if (window.innerWidth > 900) {
+        openSidebarPanel();
+      }
+      
+      topRightBtnContainer.style.display = 'block';
+      updateSidebarProgress();
+    }
+
+    function updateSidebarProgress() {
+      for (let i = 0; i < totalQuestions; i++) {
+        const box = document.getElementById(`qbox-${i}`);
+        if (!box) continue;
+
+        if (i < currentQuestion) {
+          box.className = 'q-box completed';
+        } else if (i === currentQuestion) {
+          box.className = 'q-box active';
+          box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+          box.className = 'q-box';
+        }
+      }
+    }
+
+    function closeSidebarPanel() {
+      progressSidebar.classList.remove('active');
+      document.body.classList.remove('sidebar-open');
+    }
+
+    function openSidebarPanel() {
+      progressSidebar.classList.add('active');
+      document.body.classList.add('sidebar-open');
+    }
+
+    closeSidebarBtn.addEventListener('click', closeSidebarPanel);
+    openSidebarBtn.addEventListener('click', openSidebarPanel);
 
     function startQuestionTimer() {
       clearTimerInterval();
@@ -605,6 +525,9 @@
       clearPauseInterval();
       doneBtn.disabled = true;
       currentQuestion++;
+      
+      updateSidebarProgress();
+
       if (currentQuestion < totalQuestions) {
         questionTime = perQuestionTime;
         startQuestionTimer();
@@ -684,6 +607,7 @@
       resumeBtn.disabled = true;
       doneBtn.disabled = false;
 
+      initSidebar();
       startQuestionTimer();
     }
 
@@ -709,25 +633,16 @@
     const howToUseBtn = document.getElementById('howToUseBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
 
-    function openModal() {
-      modalOverlay.classList.add('active');
-    }
-
-    function closeModal() {
-      modalOverlay.classList.remove('active');
-    }
+    function openModal() { modalOverlay.classList.add('active'); }
+    function closeModal() { modalOverlay.classList.remove('active'); }
 
     howToUseBtn.addEventListener('click', openModal);
     closeModalBtn.addEventListener('click', closeModal);
     modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) {
-        closeModal();
-      }
+      if (e.target === modalOverlay) closeModal();
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
-        closeModal();
-      }
+      if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
     });
   </script>
 </body>
